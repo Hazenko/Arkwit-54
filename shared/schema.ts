@@ -34,6 +34,7 @@ export const likes = pgTable("likes", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   postId: integer("post_id").notNull().references(() => posts.id, { onDelete: "cascade" }),
   userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  reactionType: text("reaction_type").notNull().default("like"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -120,6 +121,8 @@ export type PostWithDetails = Post & {
   commentsCount: number;
   likesCount: number;
   isLiked?: boolean;
+  userReaction?: string;
+  reactions?: { type: string; count: number }[];
 };
 
 export type CommentWithUser = Comment & {
