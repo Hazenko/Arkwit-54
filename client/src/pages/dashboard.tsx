@@ -37,9 +37,9 @@ export default function Dashboard() {
     queryKey: ['/api/posts', selectedSection],
   });
 
-  const likeMutation = useMutation({
-    mutationFn: async (postId: number) => {
-      return apiRequest('POST', '/api/likes', { postId });
+  const reactionMutation = useMutation({
+    mutationFn: async ({ postId, reactionType }: { postId: number; reactionType: string }) => {
+      return apiRequest('POST', '/api/likes', { postId, reactionType });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
@@ -164,7 +164,7 @@ export default function Dashboard() {
                     <PostCard
                       key={post.id}
                       post={post}
-                      onLike={(postId) => likeMutation.mutate(postId)}
+                      onReaction={(postId, reactionType) => reactionMutation.mutate({ postId, reactionType })}
                       onDelete={(postId) => setDeletePostId(postId)}
                       onEdit={(postId) => {
                         const post = posts.find(p => p.id === postId);

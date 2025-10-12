@@ -1,25 +1,27 @@
 import { useState } from 'react';
-import { Heart, MessageCircle, Trash2, Edit } from 'lucide-react';
+import { MessageCircle, Trash2, Edit } from 'lucide-react';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useAuth } from '@/lib/auth-context';
+import { EmojiReactionPicker } from './emoji-reaction-picker';
+import { motion } from 'framer-motion';
 import type { PostWithDetails } from '@shared/schema';
 import { formatDistanceToNow } from 'date-fns';
 import { ar } from 'date-fns/locale';
 
 interface PostCardProps {
   post: PostWithDetails;
-  onLike: (postId: number) => void;
+  onReaction: (postId: number, reactionType: string) => void;
   onDelete?: (postId: number) => void;
   onEdit?: (postId: number) => void;
   onCommentClick: (postId: number) => void;
 }
 
-export function PostCard({ post, onLike, onDelete, onEdit, onCommentClick }: PostCardProps) {
+export function PostCard({ post, onReaction, onDelete, onEdit, onCommentClick }: PostCardProps) {
   const { user } = useAuth();
-  const [isLiking, setIsLiking] = useState(false);
+  const [isReacting, setIsReacting] = useState(false);
 
   const sectionColors = {
     social: 'border-r-blue-500',
@@ -60,17 +62,23 @@ export function PostCard({ post, onLike, onDelete, onEdit, onCommentClick }: Pos
     (user.role === 'cultural_moderator' && post.section === 'cultural')
   );
 
-  const handleLike = async () => {
-    if (isLiking) return;
-    setIsLiking(true);
+  const handleReaction = async (reactionType: string) => {
+    if (isReacting) return;
+    setIsReacting(true);
     try {
-      await onLike(post.id);
+      await onReaction(post.id, reactionType);
     } finally {
-      setIsLiking(false);
+      setIsReacting(false);
     }
   };
 
   return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      transition={{ duration: 0.3 }}
+    >
     <Card className={`hover-elevate border-r-4 ${sectionColors[post.section as keyof typeof sectionColors]}`}>
       <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0 pb-4">
         <div className="flex items-start gap-3 flex-1">
@@ -131,17 +139,23 @@ export function PostCard({ post, onLike, onDelete, onEdit, onCommentClick }: Pos
       </CardContent>
 
       <CardFooter className="flex items-center gap-4 pt-4">
-        <Button
-          variant="ghost"
-          size="sm"
-          className={`gap-2 ${post.isLiked ? 'text-red-500' : ''}`}
-          onClick={handleLike}
-          disabled={isLiking}
-          data-testid={`button-like-${post.id}`}
-        >
-          <Heart className={`h-5 w-5 ${post.isLiked ? 'fill-current' : ''}`} />
-          <span data-testid={`text-likes-count-${post.id}`}>{post.likesCount}</span>
-        </Button>
+        <div className="flex items-center gap-2">
+          <EmojiReactionPicker
+            onReactionSelect={handleReaction}
+            currentReaction={post.userReaction}
+            disabled={isReacting}
+          />
+          {post.likesCount > 0 && (
+            <motion.span 
+              className="text-sm text-muted-foreground"
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              data-testid={`text-likes-count-${post.id}`}
+            >
+              {post.likesCount}
+            </motion.span>
+          )}
+        </div>
 
         <Button
           variant="ghost"
@@ -155,5 +169,6 @@ export function PostCard({ post, onLike, onDelete, onEdit, onCommentClick }: Pos
         </Button>
       </CardFooter>
     </Card>
+    </motion.div>
   );
 }

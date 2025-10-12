@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
+import { motion, AnimatePresence } from 'framer-motion';
 import type { CommentWithUser } from '@shared/schema';
 import { formatDistanceToNow } from 'date-fns';
 import { ar } from 'date-fns/locale';
@@ -119,34 +120,44 @@ export function CommentsSection({ postId }: CommentsSectionProps) {
             <p className="text-muted-foreground">لا توجد تعليقات بعد</p>
           </Card>
         ) : (
-          comments.map((comment) => (
-            <Card key={comment.id} className="p-4" data-testid={`comment-${comment.id}`}>
-              <div className="flex gap-3">
-                <Avatar className="h-8 w-8">
-                  <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
-                    {getInitials(comment.user.fullName)}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap mb-1">
-                    <span className="font-medium text-sm">{comment.user.fullName}</span>
-                    <Badge
-                      variant="outline"
-                      className={`text-xs ${roleColors[comment.user.role as keyof typeof roleColors]}`}
-                    >
-                      {getRoleName(comment.user.role)}
-                    </Badge>
-                    <span className="text-xs text-muted-foreground">
-                      {formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true, locale: ar })}
-                    </span>
+          <AnimatePresence>
+            {comments.map((comment, index) => (
+              <motion.div
+                key={comment.id}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+                transition={{ delay: index * 0.1, duration: 0.3 }}
+              >
+                <Card className="p-4" data-testid={`comment-${comment.id}`}>
+                  <div className="flex gap-3">
+                    <Avatar className="h-8 w-8">
+                      <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
+                        {getInitials(comment.user.fullName)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap mb-1">
+                        <span className="font-medium text-sm">{comment.user.fullName}</span>
+                        <Badge
+                          variant="outline"
+                          className={`text-xs ${roleColors[comment.user.role as keyof typeof roleColors]}`}
+                        >
+                          {getRoleName(comment.user.role)}
+                        </Badge>
+                        <span className="text-xs text-muted-foreground">
+                          {formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true, locale: ar })}
+                        </span>
+                      </div>
+                      <p className="text-sm text-foreground whitespace-pre-wrap" data-testid={`text-comment-${comment.id}`}>
+                        {comment.commentText}
+                      </p>
+                    </div>
                   </div>
-                  <p className="text-sm text-foreground whitespace-pre-wrap" data-testid={`text-comment-${comment.id}`}>
-                    {comment.commentText}
-                  </p>
-                </div>
-              </div>
-            </Card>
-          ))
+                </Card>
+              </motion.div>
+            ))}
+          </AnimatePresence>
         )}
       </div>
     </div>
