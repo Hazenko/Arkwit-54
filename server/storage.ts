@@ -24,6 +24,7 @@ export interface IStorage {
   getLikeByUserAndPost(userId: number, postId: number): Promise<Like | undefined>;
   createLike(like: InsertLike & { userId: number }): Promise<Like>;
   deleteLike(userId: number, postId: number): Promise<void>;
+  updateReaction(userId: number, postId: number, reactionType: string): Promise<Like>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -83,6 +84,9 @@ export class DatabaseStorage implements IStorage {
         isLiked: userId 
           ? sql<boolean>`bool_or(${likes.userId} = ${userId})`
           : sql<boolean>`false`,
+        userReaction: userId 
+          ? sql<string>`max(case when ${likes.userId} = ${userId} then ${likes.reactionType} else null end)`
+          : sql<string>`null`,
       })
       .from(posts)
       .leftJoin(users, eq(posts.userId, users.id))
@@ -107,6 +111,7 @@ export class DatabaseStorage implements IStorage {
       commentsCount: row.commentsCount,
       likesCount: row.likesCount,
       isLiked: row.isLiked,
+      userReaction: row.userReaction || undefined,
     }));
   }
 
@@ -126,6 +131,9 @@ export class DatabaseStorage implements IStorage {
         isLiked: userId 
           ? sql<boolean>`bool_or(${likes.userId} = ${userId})`
           : sql<boolean>`false`,
+        userReaction: userId 
+          ? sql<string>`max(case when ${likes.userId} = ${userId} then ${likes.reactionType} else null end)`
+          : sql<string>`null`,
       })
       .from(posts)
       .leftJoin(users, eq(posts.userId, users.id))
@@ -149,6 +157,7 @@ export class DatabaseStorage implements IStorage {
       commentsCount: row.commentsCount,
       likesCount: row.likesCount,
       isLiked: row.isLiked,
+      userReaction: row.userReaction || undefined,
     }));
   }
 
@@ -168,6 +177,9 @@ export class DatabaseStorage implements IStorage {
         isLiked: userId 
           ? sql<boolean>`bool_or(${likes.userId} = ${userId})`
           : sql<boolean>`false`,
+        userReaction: userId 
+          ? sql<string>`max(case when ${likes.userId} = ${userId} then ${likes.reactionType} else null end)`
+          : sql<string>`null`,
       })
       .from(posts)
       .leftJoin(users, eq(posts.userId, users.id))
@@ -194,6 +206,7 @@ export class DatabaseStorage implements IStorage {
       commentsCount: row.commentsCount,
       likesCount: row.likesCount,
       isLiked: row.isLiked,
+      userReaction: row.userReaction || undefined,
     };
   }
 
@@ -276,6 +289,15 @@ export class DatabaseStorage implements IStorage {
     await db
       .delete(likes)
       .where(and(eq(likes.userId, userId), eq(likes.postId, postId)));
+  }
+
+  async updateReaction(userId: number, postId: number, reactionType: string): Promise<Like> {
+    const [like] = await db
+      .update(likes)
+      .set({ reactionType })
+      .where(and(eq(likes.userId, userId), eq(likes.postId, postId)))
+      .returning();
+    return like;
   }
 }
 

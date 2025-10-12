@@ -278,18 +278,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/likes', authenticateToken, async (req, res) => {
     try {
-      const validatedData = insertLikeSchema.parse(req.body);
-      const existingLike = await storage.getLikeByUserAndPost(req.userId!, validatedData.postId);
+      const { postId, reactionType } = req.body;
+      const existingLike = await storage.getLikeByUserAndPost(req.userId!, postId);
 
-      if (existingLike) {
-        await storage.deleteLike(req.userId!, validatedData.postId);
-        res.json({ liked: false });
+      if (!reactionType || reactionType === '') {
+        if (existingLike) {
+          await storage.deleteLike(req.userId!, postId);
+        }
+        res.json({ success: true, reaction: null });
+      } else if (existingLike) {
+        if (existingLike.reactionType === reactionType) {
+          await storage.deleteLike(req.userId!, postId);
+          res.json({ success: true, reaction: null });
+        } else {
+          const updated = await storage.updateReaction(req.userId!, postId, reactionType);
+          res.json({ success: true, reaction: updated.reactionType });
+        }
       } else {
         await storage.createLike({
-          ...validatedData,
+          postId,
+          reactionType,
           userId: req.userId!,
         });
-        res.json({ liked: true });
+        res.json({ success: true, reaction: reactionType });
       }
     } catch (error: any) {
       res.status(400).json({ message: error.message });
