@@ -33,7 +33,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '7d' });
-      res.json({ token, user: { id: user.id, fullName: user.fullName, email: user.email, role: user.role } });
+      const { passwordHash: _, ...safeUser } = user;
+      res.json({ token, user: safeUser });
     } catch (error: any) {
       res.status(400).json({ message: error.message || 'فشل التسجيل' });
     }
@@ -54,7 +55,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '7d' });
-      res.json({ token, user: { id: user.id, fullName: user.fullName, email: user.email, role: user.role } });
+      const { passwordHash: _, ...safeUser } = user;
+      res.json({ token, user: safeUser });
     } catch (error: any) {
       res.status(400).json({ message: error.message || 'فشل تسجيل الدخول' });
     }
@@ -66,22 +68,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!user) {
         return res.status(404).json({ message: 'المستخدم غير موجود' });
       }
-      res.json(user);
+      const { passwordHash: _, ...safeUser } = user;
+      res.json(safeUser);
     } catch (error: any) {
       res.status(500).json({ message: error.message });
     }
   });
 
-  app.get('/api/users', authenticateToken, requireRole(['admin']), async (req, res) => {
+  app.get('/api/users', authenticateToken, async (req, res) => {
+    const user = await storage.getUserById(req.userId!);
+    if (!user || user.role !== 'admin') {
+      return res.status(403).json({ message: 'ليس لديك صلاحية للقيام بهذا الإجراء' });
+    }
+    
     try {
       const users = await storage.getAllUsers();
-      res.json(users);
+      const safeUsers = users.map(({ passwordHash, ...user }) => user);
+      res.json(safeUsers);
     } catch (error: any) {
       res.status(500).json({ message: error.message });
     }
   });
 
-  app.patch('/api/users/:id/role', authenticateToken, requireRole(['admin']), async (req, res) => {
+  app.patch('/api/users/:id/role', authenticateToken, async (req, res) => {
+    const user = await storage.getUserById(req.userId!);
+    if (!user || user.role !== 'admin') {
+      return res.status(403).json({ message: 'ليس لديك صلاحية للقيام بهذا الإجراء' });
+    }
+    
     try {
       const userId = parseInt(req.params.id);
       const { role } = req.body;
@@ -91,13 +105,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const user = await storage.updateUserRole(userId, role);
-      res.json(user);
+      const { passwordHash: _, ...safeUser } = user;
+      res.json(safeUser);
     } catch (error: any) {
       res.status(500).json({ message: error.message });
     }
   });
 
-  app.delete('/api/users/:id', authenticateToken, requireRole(['admin']), async (req, res) => {
+  app.delete('/api/users/:id', authenticateToken, async (req, res) => {
+    const user = await storage.getUserById(req.userId!);
+    if (!user || user.role !== 'admin') {
+      return res.status(403).json({ message: 'ليس لديك صلاحية للقيام بهذا الإجراء' });
+    }
+    
     try {
       const userId = parseInt(req.params.id);
       
