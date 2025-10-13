@@ -9,7 +9,7 @@ interface PostDetailDialogProps {
   postId: number | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onLike: (postId: number) => void;
+  onReaction: (postId: number, reactionType: string) => void;
   onDelete?: (postId: number) => void;
   onEdit?: (postId: number) => void;
 }
@@ -18,7 +18,7 @@ export function PostDetailDialog({
   postId, 
   open, 
   onOpenChange, 
-  onLike, 
+  onReaction, 
   onDelete, 
   onEdit 
 }: PostDetailDialogProps) {
@@ -42,7 +42,7 @@ export function PostDetailDialog({
           <div className="space-y-6">
             <PostCard
               post={post}
-              onLike={onLike}
+              onReaction={onReaction}
               onDelete={onDelete}
               onEdit={onEdit}
               onCommentClick={() => {}}

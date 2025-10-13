@@ -1,4 +1,4 @@
-import { users, posts, comments, likes, type User, type InsertUser, type Post, type InsertPost, type Comment, type InsertComment, type Like, type InsertLike, type PostWithDetails, type CommentWithUser } from "@shared/schema";
+import { users, posts, comments, likes, type User, type InsertUser, type UpdateProfile, type Post, type InsertPost, type Comment, type InsertComment, type Like, type InsertLike, type PostWithDetails, type CommentWithUser } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, sql, desc } from "drizzle-orm";
 
@@ -9,6 +9,7 @@ export interface IStorage {
   createUser(user: InsertUser & { passwordHash: string }): Promise<User>;
   getAllUsers(): Promise<User[]>;
   updateUserRole(userId: number, role: string): Promise<User>;
+  updateUserProfile(userId: number, updates: Partial<User>): Promise<User>;
   deleteUser(userId: number): Promise<void>;
 
   getPostsBySection(section: string, userId?: number): Promise<PostWithDetails[]>;
@@ -68,6 +69,15 @@ export class DatabaseStorage implements IStorage {
     await db.delete(users).where(eq(users.id, userId));
   }
 
+  async updateUserProfile(userId: number, updates: Partial<User>): Promise<User> {
+    const [user] = await db
+      .update(users)
+      .set(updates)
+      .where(eq(users.id, userId))
+      .returning();
+    return user;
+  }
+
   async getPostsBySection(section: string, userId?: number): Promise<PostWithDetails[]> {
     const result = await db
       .select({
@@ -75,10 +85,12 @@ export class DatabaseStorage implements IStorage {
         title: posts.title,
         content: posts.content,
         section: posts.section,
+        mediaUrls: posts.mediaUrls,
         userId: posts.userId,
         createdAt: posts.createdAt,
         userName: users.fullName,
         userRole: users.role,
+        userAvatar: users.avatar,
         commentsCount: sql<number>`cast(count(distinct ${comments.id}) as int)`,
         likesCount: sql<number>`cast(count(distinct ${likes.id}) as int)`,
         isLiked: userId 
@@ -101,12 +113,14 @@ export class DatabaseStorage implements IStorage {
       title: row.title,
       content: row.content,
       section: row.section,
+      mediaUrls: row.mediaUrls,
       userId: row.userId,
       createdAt: row.createdAt,
       user: {
         id: row.userId,
         fullName: row.userName || '',
         role: row.userRole || 'user',
+        avatar: row.userAvatar || null,
       },
       commentsCount: row.commentsCount,
       likesCount: row.likesCount,
@@ -122,10 +136,12 @@ export class DatabaseStorage implements IStorage {
         title: posts.title,
         content: posts.content,
         section: posts.section,
+        mediaUrls: posts.mediaUrls,
         userId: posts.userId,
         createdAt: posts.createdAt,
         userName: users.fullName,
         userRole: users.role,
+        userAvatar: users.avatar,
         commentsCount: sql<number>`cast(count(distinct ${comments.id}) as int)`,
         likesCount: sql<number>`cast(count(distinct ${likes.id}) as int)`,
         isLiked: userId 
@@ -147,12 +163,14 @@ export class DatabaseStorage implements IStorage {
       title: row.title,
       content: row.content,
       section: row.section,
+      mediaUrls: row.mediaUrls,
       userId: row.userId,
       createdAt: row.createdAt,
       user: {
         id: row.userId,
         fullName: row.userName || '',
         role: row.userRole || 'user',
+        avatar: row.userAvatar || null,
       },
       commentsCount: row.commentsCount,
       likesCount: row.likesCount,
@@ -168,10 +186,12 @@ export class DatabaseStorage implements IStorage {
         title: posts.title,
         content: posts.content,
         section: posts.section,
+        mediaUrls: posts.mediaUrls,
         userId: posts.userId,
         createdAt: posts.createdAt,
         userName: users.fullName,
         userRole: users.role,
+        userAvatar: users.avatar,
         commentsCount: sql<number>`cast(count(distinct ${comments.id}) as int)`,
         likesCount: sql<number>`cast(count(distinct ${likes.id}) as int)`,
         isLiked: userId 
@@ -196,12 +216,14 @@ export class DatabaseStorage implements IStorage {
       title: row.title,
       content: row.content,
       section: row.section,
+      mediaUrls: row.mediaUrls,
       userId: row.userId,
       createdAt: row.createdAt,
       user: {
         id: row.userId,
         fullName: row.userName || '',
         role: row.userRole || 'user',
+        avatar: row.userAvatar || null,
       },
       commentsCount: row.commentsCount,
       likesCount: row.likesCount,
@@ -237,10 +259,12 @@ export class DatabaseStorage implements IStorage {
         id: comments.id,
         postId: comments.postId,
         userId: comments.userId,
+        parentCommentId: comments.parentCommentId,
         commentText: comments.commentText,
         createdAt: comments.createdAt,
         userName: users.fullName,
         userRole: users.role,
+        userAvatar: users.avatar,
       })
       .from(comments)
       .leftJoin(users, eq(comments.userId, users.id))
@@ -251,12 +275,14 @@ export class DatabaseStorage implements IStorage {
       id: row.id,
       postId: row.postId,
       userId: row.userId,
+      parentCommentId: row.parentCommentId,
       commentText: row.commentText,
       createdAt: row.createdAt,
       user: {
         id: row.userId,
         fullName: row.userName || '',
         role: row.userRole || 'user',
+        avatar: row.userAvatar || null,
       },
     }));
   }

@@ -9,7 +9,7 @@ import { CreatePostDialog } from '@/components/create-post-dialog';
 import { EditPostDialog } from '@/components/edit-post-dialog';
 import { PostDetailDialog } from '@/components/post-detail-dialog';
 import { ThemeToggle } from '@/components/theme-toggle';
-import { LogOut, Settings, Loader2 } from 'lucide-react';
+import { LogOut, Settings, Loader2, User } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { PostWithDetails, Post } from '@shared/schema';
 import { useLocation } from 'wouter';
@@ -99,6 +99,14 @@ export default function Dashboard() {
             </div>
             <div className="flex items-center gap-2">
               <ThemeToggle />
+              <Button
+                variant="outline"
+                onClick={() => setLocation('/profile')}
+                data-testid="button-profile"
+              >
+                <User className="ml-2 h-5 w-5" />
+                <span className="hidden sm:inline">الملف الشخصي</span>
+              </Button>
               {user?.role === 'admin' && (
                 <Button
                   variant="outline"
@@ -106,7 +114,7 @@ export default function Dashboard() {
                   data-testid="button-admin"
                 >
                   <Settings className="ml-2 h-5 w-5" />
-                  لوحة التحكم
+                  <span className="hidden sm:inline">لوحة التحكم</span>
                 </Button>
               )}
               <Button
@@ -115,7 +123,7 @@ export default function Dashboard() {
                 data-testid="button-logout"
               >
                 <LogOut className="ml-2 h-5 w-5" />
-                تسجيل الخروج
+                <span className="hidden sm:inline">تسجيل الخروج</span>
               </Button>
             </div>
           </div>
@@ -184,7 +192,7 @@ export default function Dashboard() {
         postId={selectedPostId}
         open={selectedPostId !== null}
         onOpenChange={(open) => !open && setSelectedPostId(null)}
-        onLike={(postId) => likeMutation.mutate(postId)}
+        onReaction={(postId, reactionType) => reactionMutation.mutate({ postId, reactionType })}
         onDelete={(postId) => setDeletePostId(postId)}
         onEdit={(postId) => {
           const post = posts.find(p => p.id === postId);

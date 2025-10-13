@@ -10,6 +10,7 @@ import Login from "@/pages/login";
 import Register from "@/pages/register";
 import Dashboard from "@/pages/dashboard";
 import Admin from "@/pages/admin";
+import Profile from "@/pages/profile";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -25,6 +26,11 @@ function Router() {
       <Route path="/admin">
         <ProtectedRoute>
           <Admin />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/profile">
+        <ProtectedRoute>
+          <Profile />
         </ProtectedRoute>
       </Route>
       <Route component={NotFound} />

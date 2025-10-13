@@ -4,7 +4,7 @@ import { storage } from "./storage";
 import { authenticateToken, requireRole } from "./middleware/auth";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import { insertUserSchema, loginSchema, insertPostSchema, insertCommentSchema, insertLikeSchema } from "@shared/schema";
+import { insertUserSchema, loginSchema, updateProfileSchema, insertPostSchema, insertCommentSchema, insertLikeSchema } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   const JWT_SECRET = process.env.JWT_SECRET;
@@ -87,6 +87,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(safeUsers);
     } catch (error: any) {
       res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get('/api/users/:id', authenticateToken, async (req, res) => {
+    try {
+      const userId = parseInt(req.params.id);
+      const user = await storage.getUserById(userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: 'المستخدم غير موجود' });
+      }
+
+      const { passwordHash: _, ...safeUser } = user;
+      res.json(safeUser);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.patch('/api/users/profile', authenticateToken, async (req, res) => {
+    try {
+      const validatedData = updateProfileSchema.parse(req.body);
+      const user = await storage.getUserById(req.userId!);
+
+      if (!user) {
+        return res.status(404).json({ message: 'المستخدم غير موجود' });
+      }
+
+      const updates: Partial<typeof user> = {};
+      
+      if (validatedData.fullName) updates.fullName = validatedData.fullName;
+      if (validatedData.bio !== undefined) updates.bio = validatedData.bio;
+      if (validatedData.avatar !== undefined) updates.avatar = validatedData.avatar;
+      
+      if (validatedData.email && validatedData.email !== user.email) {
+        const existingUser = await storage.getUserByEmail(validatedData.email);
+        if (existingUser) {
+          return res.status(400).json({ message: 'البريد الإلكتروني مستخدم بالفعل' });
+        }
+        updates.email = validatedData.email;
+      }
+
+      if (validatedData.phone && validatedData.phone !== user.phone) {
+        const existingUser = await storage.getUserByPhone(validatedData.phone);
+        if (existingUser) {
+          return res.status(400).json({ message: 'رقم الهاتف مستخدم بالفعل' });
+        }
+        updates.phone = validatedData.phone;
+      }
+
+      if (validatedData.newPassword) {
+        if (!validatedData.currentPassword) {
+          return res.status(400).json({ message: 'كلمة المرور الحالية مطلوبة' });
+        }
+        
+        const isPasswordValid = await bcrypt.compare(validatedData.currentPassword, user.passwordHash);
+        if (!isPasswordValid) {
+          return res.status(401).json({ message: 'كلمة المرور الحالية غير صحيحة' });
+        }
+        
+        updates.passwordHash = await bcrypt.hash(validatedData.newPassword, 10);
+      }
+
+      const updatedUser = await storage.updateUserProfile(req.userId!, updates);
+      const { passwordHash: _, ...safeUser } = updatedUser;
+      res.json(safeUser);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
     }
   });
 

@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Loader2 } from 'lucide-react';
+import { Plus, Loader2, ImagePlus, X } from 'lucide-react';
 
 interface CreatePostDialogProps {
   defaultSection?: string;
@@ -19,6 +19,8 @@ interface CreatePostDialogProps {
 
 export function CreatePostDialog({ defaultSection = 'social' }: CreatePostDialogProps) {
   const [open, setOpen] = useState(false);
+  const [mediaUrls, setMediaUrls] = useState<string[]>([]);
+  const [currentMediaUrl, setCurrentMediaUrl] = useState('');
   const { toast } = useToast();
 
   const form = useForm<InsertPost>({
@@ -27,6 +29,7 @@ export function CreatePostDialog({ defaultSection = 'social' }: CreatePostDialog
       title: '',
       content: '',
       section: defaultSection,
+      mediaUrls: [],
     },
   });
 
@@ -52,12 +55,35 @@ export function CreatePostDialog({ defaultSection = 'social' }: CreatePostDialog
     },
   });
 
+  const addMediaUrl = () => {
+    if (currentMediaUrl.trim()) {
+      setMediaUrls([...mediaUrls, currentMediaUrl.trim()]);
+      setCurrentMediaUrl('');
+    }
+  };
+
+  const removeMediaUrl = (index: number) => {
+    setMediaUrls(mediaUrls.filter((_, i) => i !== index));
+  };
+
   const onSubmit = (data: InsertPost) => {
-    createPostMutation.mutate(data);
+    createPostMutation.mutate({
+      ...data,
+      mediaUrls: mediaUrls.length > 0 ? mediaUrls : undefined,
+    });
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog 
+      open={open} 
+      onOpenChange={(isOpen) => {
+        setOpen(isOpen);
+        if (!isOpen) {
+          setMediaUrls([]);
+          setCurrentMediaUrl('');
+        }
+      }}
+    >
       <DialogTrigger asChild>
         <Button data-testid="button-create-post">
           <Plus className="ml-2 h-5 w-5" />
@@ -127,6 +153,50 @@ export function CreatePostDialog({ defaultSection = 'social' }: CreatePostDialog
                 </FormItem>
               )}
             />
+
+            <div className="space-y-3">
+              <FormLabel className="flex items-center gap-2">
+                <ImagePlus className="h-4 w-4" />
+                الصور والفيديوهات
+              </FormLabel>
+              <div className="flex gap-2">
+                <Input
+                  value={currentMediaUrl}
+                  onChange={(e) => setCurrentMediaUrl(e.target.value)}
+                  placeholder="الصق رابط الصورة أو الفيديو"
+                  onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addMediaUrl())}
+                  data-testid="input-media-url"
+                />
+                <Button
+                  type="button"
+                  onClick={addMediaUrl}
+                  variant="outline"
+                  size="icon"
+                  data-testid="button-add-media"
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+              {mediaUrls.length > 0 && (
+                <div className="space-y-2">
+                  {mediaUrls.map((url, index) => (
+                    <div key={index} className="flex items-center gap-2 p-2 bg-muted rounded-lg" data-testid={`media-url-${index}`}>
+                      <span className="text-sm truncate flex-1">{url}</span>
+                      <Button
+                        type="button"
+                        onClick={() => removeMediaUrl(index)}
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6"
+                        data-testid={`button-remove-media-${index}`}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
 
             <div className="flex justify-end gap-3">
               <Button

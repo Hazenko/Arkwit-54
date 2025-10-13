@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { insertPostSchema, type InsertPost, type Post } from '@shared/schema';
@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2 } from 'lucide-react';
+import { Loader2, ImagePlus, Plus, X } from 'lucide-react';
 
 interface EditPostDialogProps {
   post: Post | null;
@@ -20,6 +20,8 @@ interface EditPostDialogProps {
 }
 
 export function EditPostDialog({ post, open, onOpenChange }: EditPostDialogProps) {
+  const [mediaUrls, setMediaUrls] = useState<string[]>([]);
+  const [currentMediaUrl, setCurrentMediaUrl] = useState('');
   const { toast } = useToast();
 
   const form = useForm<InsertPost>({
@@ -28,6 +30,7 @@ export function EditPostDialog({ post, open, onOpenChange }: EditPostDialogProps
       title: '',
       content: '',
       section: 'social',
+      mediaUrls: [],
     },
   });
 
@@ -37,7 +40,9 @@ export function EditPostDialog({ post, open, onOpenChange }: EditPostDialogProps
         title: post.title,
         content: post.content,
         section: post.section,
+        mediaUrls: post.mediaUrls || [],
       });
+      setMediaUrls(post.mediaUrls || []);
     }
   }, [post, form]);
 
@@ -62,14 +67,33 @@ export function EditPostDialog({ post, open, onOpenChange }: EditPostDialogProps
     },
   });
 
+  const addMediaUrl = () => {
+    if (currentMediaUrl.trim()) {
+      setMediaUrls([...mediaUrls, currentMediaUrl.trim()]);
+      setCurrentMediaUrl('');
+    }
+  };
+
+  const removeMediaUrl = (index: number) => {
+    setMediaUrls(mediaUrls.filter((_, i) => i !== index));
+  };
+
   const onSubmit = (data: InsertPost) => {
-    updatePostMutation.mutate(data);
+    updatePostMutation.mutate({
+      ...data,
+      mediaUrls: mediaUrls.length > 0 ? mediaUrls : undefined,
+    });
   };
 
   if (!post) return null;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(isOpen) => {
+      onOpenChange(isOpen);
+      if (!isOpen) {
+        setCurrentMediaUrl('');
+      }
+    }}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>تعديل المنشور</DialogTitle>
@@ -133,6 +157,50 @@ export function EditPostDialog({ post, open, onOpenChange }: EditPostDialogProps
                 </FormItem>
               )}
             />
+
+            <div className="space-y-3">
+              <FormLabel className="flex items-center gap-2">
+                <ImagePlus className="h-4 w-4" />
+                الصور والفيديوهات
+              </FormLabel>
+              <div className="flex gap-2">
+                <Input
+                  value={currentMediaUrl}
+                  onChange={(e) => setCurrentMediaUrl(e.target.value)}
+                  placeholder="الصق رابط الصورة أو الفيديو"
+                  onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addMediaUrl())}
+                  data-testid="input-edit-media-url"
+                />
+                <Button
+                  type="button"
+                  onClick={addMediaUrl}
+                  variant="outline"
+                  size="icon"
+                  data-testid="button-add-edit-media"
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+              {mediaUrls.length > 0 && (
+                <div className="space-y-2">
+                  {mediaUrls.map((url, index) => (
+                    <div key={index} className="flex items-center gap-2 p-2 bg-muted rounded-lg" data-testid={`edit-media-url-${index}`}>
+                      <span className="text-sm truncate flex-1">{url}</span>
+                      <Button
+                        type="button"
+                        onClick={() => removeMediaUrl(index)}
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6"
+                        data-testid={`button-remove-edit-media-${index}`}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
 
             <div className="flex justify-end gap-3">
               <Button

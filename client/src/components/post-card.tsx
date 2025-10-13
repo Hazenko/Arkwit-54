@@ -136,6 +136,29 @@ export function PostCard({ post, onReaction, onDelete, onEdit, onCommentClick }:
         <p className="text-foreground whitespace-pre-wrap leading-relaxed" data-testid={`text-post-content-${post.id}`}>
           {post.content}
         </p>
+        {post.mediaUrls && post.mediaUrls.length > 0 && (
+          <div className="grid gap-2 mt-4" style={{ gridTemplateColumns: post.mediaUrls.length === 1 ? '1fr' : 'repeat(auto-fit, minmax(250px, 1fr))' }}>
+            {post.mediaUrls.map((url, index) => (
+              <div key={index} className="relative rounded-lg overflow-hidden bg-muted" data-testid={`media-item-${post.id}-${index}`}>
+                {url.match(/\.(mp4|webm|ogg)$/i) ? (
+                  <video
+                    src={url}
+                    controls
+                    className="w-full h-auto max-h-96 object-contain"
+                    data-testid={`video-${post.id}-${index}`}
+                  />
+                ) : (
+                  <img
+                    src={url}
+                    alt={`Media ${index + 1}`}
+                    className="w-full h-auto max-h-96 object-contain"
+                    data-testid={`image-${post.id}-${index}`}
+                  />
+                )}
+              </div>
+            ))}
+          </div>
+        )}
       </CardContent>
 
       <CardFooter className="flex items-center gap-4 pt-4">
