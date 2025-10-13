@@ -100,15 +100,14 @@ export default function Login() {
 
               <div className="text-center text-sm text-muted-foreground">
                 ليس لديك حساب؟{' '}
-                <Button
+                <button
                   type="button"
-                  variant="link"
-                  className="p-0 h-auto font-medium"
+                  className="text-primary hover:underline font-medium"
                   onClick={() => setLocation('/register')}
                   data-testid="link-register"
                 >
                   إنشاء حساب جديد
-                </Button>
+                </button>
               </div>
             </form>
           </Form>
