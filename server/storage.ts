@@ -271,7 +271,7 @@ export class DatabaseStorage implements IStorage {
       .where(eq(comments.postId, postId))
       .orderBy(comments.createdAt);
 
-    return result.map(row => ({
+    const allComments = result.map(row => ({
       id: row.id,
       postId: row.postId,
       userId: row.userId,
@@ -284,7 +284,28 @@ export class DatabaseStorage implements IStorage {
         role: row.userRole || 'user',
         avatar: row.userAvatar || null,
       },
+      replies: [] as CommentWithUser[],
     }));
+
+    const commentMap = new Map<number, CommentWithUser>();
+    const topLevelComments: CommentWithUser[] = [];
+
+    allComments.forEach(comment => {
+      commentMap.set(comment.id, comment);
+    });
+
+    allComments.forEach(comment => {
+      if (comment.parentCommentId) {
+        const parent = commentMap.get(comment.parentCommentId);
+        if (parent) {
+          parent.replies!.push(comment);
+        }
+      } else {
+        topLevelComments.push(comment);
+      }
+    });
+
+    return topLevelComments;
   }
 
   async createComment(insertComment: InsertComment & { userId: number }): Promise<Comment> {
