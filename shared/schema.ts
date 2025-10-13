@@ -75,12 +75,12 @@ export const likesRelations = relations(likes, ({ one }) => ({
   }),
 }));
 
-export const insertUserSchema = createInsertSchema(users).omit({
-  id: true,
-  createdAt: true,
-  passwordHash: true,
-}).extend({
+export const insertUserSchema = z.object({
+  fullName: z.string().min(1, "الاسم الكامل مطلوب"),
+  email: z.string().email("البريد الإلكتروني غير صحيح"),
+  phone: z.string().min(1, "رقم الهاتف مطلوب"),
   password: z.string().min(6, "كلمة المرور يجب أن تحتوي على 6 أحرف على الأقل"),
+  role: z.string().optional(),
 });
 
 export const loginSchema = z.object({
@@ -88,22 +88,20 @@ export const loginSchema = z.object({
   password: z.string().min(1, "كلمة المرور مطلوبة"),
 });
 
-export const insertPostSchema = createInsertSchema(posts).omit({
-  id: true,
-  createdAt: true,
-  userId: true,
+export const insertPostSchema = z.object({
+  title: z.string().min(1, "العنوان مطلوب"),
+  content: z.string().min(1, "المحتوى مطلوب"),
+  section: z.string().min(1, "القسم مطلوب"),
 });
 
-export const insertCommentSchema = createInsertSchema(comments).omit({
-  id: true,
-  createdAt: true,
-  userId: true,
+export const insertCommentSchema = z.object({
+  postId: z.number(),
+  commentText: z.string().min(1, "نص التعليق مطلوب"),
 });
 
-export const insertLikeSchema = createInsertSchema(likes).omit({
-  id: true,
-  createdAt: true,
-  userId: true,
+export const insertLikeSchema = z.object({
+  postId: z.number(),
+  reactionType: z.string(),
 });
 
 export type User = typeof users.$inferSelect;
