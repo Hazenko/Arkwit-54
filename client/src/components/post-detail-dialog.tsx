@@ -23,7 +23,7 @@ export function PostDetailDialog({
   onEdit 
 }: PostDetailDialogProps) {
   const { data: post, isLoading } = useQuery<PostWithDetails>({
-    queryKey: ['/api/posts', postId],
+    queryKey: ['/api/posts/detail', postId],
     enabled: !!postId,
   });
 
